@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chenlei — 建站与工具笔记</title>
+<meta name="description" content="chenlei 的技术笔记：免费域名、DNS 判断、GitHub Pages 部署、浏览器自动化。都是自己踩过的坑。">
+<style>
+  :root{
+    --bg:#ffffff; --fg:#16181d; --muted:#6b7280; --line:#e6e8ec;
+    --accent:#7c3aed; --card:#fafafa;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e1014; --fg:#e8eaed; --muted:#98a2b3; --line:#242a33;
+           --accent:#a78bfa; --card:#151920; }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  main{max-width:680px; margin:0 auto; padding:64px 24px 80px}
+  header{margin-bottom:36px}
+  h1{font-size:30px; letter-spacing:.4px; margin:0 0 8px}
+  .tag{color:var(--muted); font-size:15px; margin:0}
+  h2{font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+     font-weight:600; margin:44px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line)}
+  p{margin:0 0 14px}
+  ul{margin:0; padding-left:18px}
+  li{margin:7px 0}
+  a{color:var(--accent); text-decoration:none; border-bottom:1px solid transparent; transition:.15s}
+  a:hover{border-bottom-color:var(--accent)}
+  .note{border-left:2px solid var(--line); padding:2px 0 2px 14px; margin:0 0 18px}
+  .note h3{margin:0 0 4px; font-size:16px; font-weight:600}
+  .note p{margin:0; color:var(--muted); font-size:14.5px}
+  code{background:var(--card); border:1px solid var(--line); border-radius:5px;
+       padding:1px 6px; font-size:13.5px}
+  footer{margin-top:56px; padding-top:20px; border-top:1px solid var(--line);
+         color:var(--muted); font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>chenlei</h1>
+    <p class="tag">建站、DNS、脚本 —— 踩过的坑记在这里</p>
+  </header>
+
+  <p>这个域名（<code>chenlei.is-a.dev</code>）是我自己申请下来的，用来放零散的技术记录。主站在 <a href="https://china9527.de5.net/">china9527.de5.net</a>。</p>
+
+  <h2>域名与 DNS</h2>
+
+  <div class="note">
+    <h3>子域名没有独立 WHOIS，要查根域</h3>
+    <p>注册了一个免费三级域名，想知道它能活多久，查子域名什么也查不到。真正决定生死的是根域：<code>whois de5.net</code> 看注册局到期日。根域一过期，底下所有子域一起消失，而这一步你完全控制不了。</p>
+  </div>
+
+  <div class="note">
+    <h3>判断一个后缀还活着，看 SOA 不看 ping</h3>
+    <p><code>nslookup -type=SOA example.com</code> 能返回主 NS 和序列号，说明注册局在正常提供权威数据；ping 不通只代表没配 A 记录，说明不了什么。有的后缀 root 还在、子域却早已停服，SOA 是更靠谱的第一道筛子。</p>
+  </div>
+
+  <div class="note">
+    <h3>PSL 决定这个域名能不能当独立站</h3>
+    <p>不在公共后缀列表（PSL）里的免费后缀，浏览器会把所有用户的 Cookie 混在一起，Cloudflare 之类也没法按整域托管。判断方法只有一条：拉官方 <code>public_suffix_list.dat</code> 逐行 grep，别信服务商自己的宣传页。</p>
+  </div>
+
+  <div class="note">
+    <h3>下载失败时 grep 会安静地骗你</h3>
+    <p>用 <code>grep -qx</code> 核对域名是否在多行文件里，如果那个文件其实没下载成功，它会返回「不匹配」而不是报错 —— 于是得出一整批域名都不在列表里的假结论。核对前先确认文件行数和字节数。</p>
+  </div>
+
+  <h2>GitHub Pages</h2>
+
+  <div class="note">
+    <h3>一个仓库只能绑一个自定义域名</h3>
+    <p>三个域名都指向同一个站点时，只有最后设置的那个能拿到证书，其余会报证书错误。要让多个域名同时可用，得拆成多个仓库分别配 Pages，不是加条解析就能解决。</p>
+  </div>
+
+  <div class="note">
+    <h3>CNAME 文件是绑定凭据，删了站点就掉线</h3>
+    <p>设置自定义域名后 GitHub 会往仓库里提交一个 <code>CNAME</code> 文件。它看起来像个无关紧要的配置，实际是 Pages 判断该服务哪个域名的依据。</p>
+  </div>
+
+  <div class="note">
+    <h3>改自定义域名会新增一条用真实邮箱署名的提交</h3>
+    <p>这条自动提交的作者邮箱绕不过账号的隐私设置，公开仓库里任何人翻历史都能看到。改完域名记得回头查一眼 <code>git log --format="%ae"</code>。</p>
+  </div>
+
+  <h2>浏览器自动化</h2>
+
+  <div class="note">
+    <h3>React 受控表单：改 value 不等于改状态</h3>
+    <p>直接赋值 <code>input.value</code> 页面显示变了，提交时却是空的。要走原生 setter 再派发 <code>input</code> 事件：<code>Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el, v)</code>。</p>
+  </div>
+
+  <div class="note">
+    <h3>视口外的按钮点不中，滚动不一定管用</h3>
+    <p>某些布局下 <code>window.scrollTo</code> 会被还原，<code>scrollIntoView</code> 也不生效。可靠的解法是把视口高度调大（调试协议里的 <code>Emulation.setDeviceMetricsOverride</code>），让目标进入可视区再点。</p>
+  </div>
+
+  <h2>联系</h2>
+  <p>邮箱：<a href="mailto:929547365@qq.com">929547365@qq.com</a><br>
+     GitHub：<a href="https://github.com/leilei520920">github.com/leilei520920</a><br>
+     主站：<a href="https://china9527.de5.net/">china9527.de5.net</a></p>
+
+  <footer>
+    个人技术记录，非商业用途。<br>
+    Hosted on GitHub Pages · 域名由 <a href="https://is-a.dev">is-a.dev</a> 提供
+  </footer>
+</main>
+</body>
+</html>
